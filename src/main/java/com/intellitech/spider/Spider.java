@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.List;
 
 import org.apache.http.HttpEntity;
 import org.apache.http.client.ClientProtocolException;
@@ -15,8 +16,18 @@ import org.apache.http.entity.ContentType;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
+import org.jsoup.select.Elements;
+
+import com.intellitech.spider.html.Link;
 
 public class Spider {
+	public Spider()
+	{
+		System.out.println("..............");
+	}
 	private Closeable response;
 
 	public String crawl(String url) throws ClientProtocolException, IOException {
@@ -56,4 +67,18 @@ public class Spider {
 			response.close();
 		}
 	}
+	
+	public List<Link>parsePage(String url) throws IOException
+	{
+		Document doc = Jsoup.connect(url).get();
+        Elements links = doc.select("a[href]");
+
+        for (Element link : links) {
+            //print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35));
+            System.out.println(link);
+        }
+        
+        return null;
+    }
+
 }

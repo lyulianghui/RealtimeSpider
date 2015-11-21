@@ -14,5 +14,6 @@ public class SpiderTest {
 public void testCrawl() throws ClientProtocolException, IOException
 {
 	Assert.assertNotNull(spider.crawl("http://www.sina.com.cn"));
+	Assert.assertNull(spider.parsePage("http://finance.sina.com.cn/stock/"));
 }
 }
