@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.http.HttpEntity;
@@ -20,13 +21,41 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import com.intellitech.spider.html.Link;
+import com.intellitech.spider.analyzer.Analyzer;
+import com.intellitech.spider.dao.LinkMapper;
+import com.intellitech.spider.model.Link;
+import com.intellitech.spider.model.LinkExample;
+import com.intellitech.spider.similar.Similarity;
 
 public class Spider {
+	static float THRESHOLD_SCORE = 0.8f;
+	
+	@Autowired
+	private Analyzer analyzer; 
+	
+	
+	
+	@Autowired
+	private Similarity similarity;
+	
+	@Autowired
+	private LinkMapper linkMapper;
+	public LinkMapper getLinkMapper() {
+		return linkMapper;
+	}
+
+	public void setLinkMapper(LinkMapper linkMapper) {
+		this.linkMapper = linkMapper;
+	}
+
 	public Spider()
 	{
-		System.out.println("..............");
+	}
+	private List<Link> getExistLinks() {
+		// TODO Auto-generated method stub
+		return linkMapper.selectByExample(new LinkExample());
 	}
 	private Closeable response;
 
@@ -72,13 +101,37 @@ public class Spider {
 	{
 		Document doc = Jsoup.connect(url).get();
         Elements links = doc.select("a[href]");
-
+        List<Link> linkList = new ArrayList();
         for (Element link : links) {
             //print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35));
             System.out.println(link);
+            linkList.add(new Link(null,link.attr("abs:href"),link.text(),url,""));
         }
         
-        return null;
+        return linkList;
     }
 
+	public List<Link> filterLinks(List<Link>links)
+	{
+		List<Link>filterLinks = new ArrayList<Link>();
+		for(Link link:links)
+		{
+			float score= similarity.maxSimilarScore(link.getTerms());
+			if(score>=THRESHOLD_SCORE)
+			{
+				filterLinks.add(link);
+			}
+		}
+		return filterLinks;
+	}
+	
+	public int storeLinks(List<Link>links)
+	{
+		int count=0;
+		for(Link link:links)
+		{
+			count = count+linkMapper.insert(link);
+		}
+		return count;
+	}
 }
