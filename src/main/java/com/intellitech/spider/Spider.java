@@ -7,6 +7,7 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
 import org.apache.http.HttpEntity;
@@ -23,42 +24,72 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import com.intellitech.spider.analyzer.Analyzer;
+import com.intellitech.spider.analyzer.TextAnalyzer;
+import com.intellitech.spider.common.Constants;
 import com.intellitech.spider.dao.LinkMapper;
+import com.intellitech.spider.dao.RootPageMapper;
+import com.intellitech.spider.filter.Filter;
 import com.intellitech.spider.model.Link;
 import com.intellitech.spider.model.LinkExample;
-import com.intellitech.spider.similar.Similarity;
+import com.intellitech.spider.model.RootPage;
+import com.intellitech.spider.similar.SimilarityCounter;
 
-public class Spider {
+public class Spider extends Thread{
 	static float THRESHOLD_SCORE = 0.8f;
 	
-	@Autowired
-	private Analyzer analyzer; 
+	
+	private Filter filter;
+	
+	private TextAnalyzer analyzer; 
+	private RootPageMapper rootPageMapper;
 	
 	
+	private SimilarityCounter similarityCounter;
 	
-	@Autowired
-	private Similarity similarity;
-	
-	@Autowired
 	private LinkMapper linkMapper;
-	public LinkMapper getLinkMapper() {
-		return linkMapper;
-	}
 
-	public void setLinkMapper(LinkMapper linkMapper) {
+	List<RootPage> pages;
+	
+	volatile boolean stop =false;
+
+	public Spider(List<RootPage> pages, Filter filter, TextAnalyzer analyzer, SimilarityCounter similarityCounter, LinkMapper linkMapper,RootPageMapper rootPageMapper) {
+		super();
+		this.filter = filter;
+		this.analyzer = analyzer;
+		this.similarityCounter = similarityCounter;
 		this.linkMapper = linkMapper;
+		this.pages = pages;
+		this.rootPageMapper = rootPageMapper;
 	}
 
-	public Spider()
+	public void run()
 	{
+		for(RootPage page:pages)
+		{
+			if(stop)
+				return;
+			try {
+				List<Link> links = parsePage(page);
+				
+				//旧首页，爬出来的链接需要过滤，只保存新增的link。
+				if(page.getIsNew() == Constants.OLD_PAGE)
+				{
+					links = filterLinks(links);
+				}
+				else
+				{
+					page.setIsNew(Constants.OLD_PAGE);
+					rootPageMapper.updateByPrimaryKey(page);
+				}
+				int newLink = storeLinks(links);
+				System.out.println(newLink);
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+			}
+		}
 	}
-	private List<Link> getExistLinks() {
-		// TODO Auto-generated method stub
-		return linkMapper.selectByExample(new LinkExample());
-	}
-	private Closeable response;
-
+	
 	public String crawl(String url) throws ClientProtocolException, IOException {
 
 		// 构造HttpClient的实例
@@ -97,15 +128,24 @@ public class Spider {
 		}
 	}
 	
-	public List<Link>parsePage(String url) throws IOException
+	public List<Link>parsePage(RootPage page) throws IOException
 	{
-		Document doc = Jsoup.connect(url).get();
+		Document doc = Jsoup.connect(page.getUrl()).get();
         Elements links = doc.select("a[href]");
         List<Link> linkList = new ArrayList();
         for (Element link : links) {
             //print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35));
-            System.out.println(link);
-            linkList.add(new Link(null,link.attr("abs:href"),link.text(),url,""));
+            //System.out.println(link);
+        	int status = Constants.NEW_PAGE;
+        	//新首页
+        	if(page.getIsNew()==Constants.NEW_PAGE)
+        	{
+        		//新增的首页，爬出来的网页不需要发送，都当成旧网页存起来
+        		status = Constants.OLD_PAGE;
+        	}
+        	if(!filter.filter(link))
+        		linkList.add(new Link(null,link.attr("abs:href"),link.text(),page.getUrl(),analyzer.analyze(link.text()),status,new Date()));
+        	
         }
         
         return linkList;
@@ -116,8 +156,8 @@ public class Spider {
 		List<Link>filterLinks = new ArrayList<Link>();
 		for(Link link:links)
 		{
-			float score= similarity.maxSimilarScore(link.getTerms());
-			if(score>=THRESHOLD_SCORE)
+			float score= similarityCounter.maxSimilarScore(link.getTerms());
+			if(score<THRESHOLD_SCORE)
 			{
 				filterLinks.add(link);
 			}

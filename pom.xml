@@ -14,6 +14,11 @@
 
 	<dependencies>
 		<dependency>
+			<groupId>com.intellitech</groupId>
+			<artifactId>paoding</artifactId>
+			<version>1.0-SNAPSHOT</version>
+		</dependency>
+		<dependency>
 	      <groupId>mysql</groupId>
 	      <artifactId>mysql-connector-java</artifactId>
 	      <version>${mysql.version}</version>
@@ -112,6 +117,10 @@
 		      <groupId>org.mybatis.generator</groupId>
 		      <artifactId>mybatis-generator-maven-plugin</artifactId>
 		      <version>${mybatis-generator.version}</version>
+		      <configuration>
+                    <verbose>true</verbose>
+                    <overwrite>true</overwrite>
+                </configuration>
 		      <dependencies>
 		      <!-- 数据库驱动  -->
 		        <dependency>
@@ -143,8 +152,8 @@
 			      <groupId>org.apache.maven.plugins</groupId>
 			      <artifactId>maven-compiler-plugin</artifactId>
 			      <configuration>
-			        <source>1.5</source>
-			        <target>1.5</target>
+			        <source>1.7</source>
+			        <target>1.7</target>
 			        <encoding>UTF-8</encoding>
 			      </configuration>
 			    </plugin>

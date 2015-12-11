@@ -30,9 +30,9 @@
 	               <property name="cronExpression" value="0/10 * * * * ?" />  
 	</bean>  
 	  
-	<bean id="spider" class="com.intellitech.spider.Spider">  
+	<!-- <bean id="spider" class="com.intellitech.spider.Spider"/>   -->
  
-	</bean>  
+ 
 	<!--  总管理类如果将lazy-init='false'那么容器启动就会执行调度程序   -->  
 	<bean id="startQuertz" class="org.springframework.scheduling.quartz.SchedulerFactoryBean" lazy-init="false" >  
 	        <property name="triggers">  
@@ -54,6 +54,29 @@
 	    <property name="mapperInterface" value="com.intellitech.spider.dao.LinkMapper" />  
 	    <property name="sqlSessionFactory" ref="sqlSessionFactory" />  
 	</bean>  
-	<bean id="similarity" class="com.intellitech.spider.similar.SimilarityImpl">   
+	<bean id="rootPageMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">  
+	    <property name="mapperInterface" value="com.intellitech.spider.dao.RootPageMapper" />  
+	    <property name="sqlSessionFactory" ref="sqlSessionFactory" />  
+	</bean> 
+	<bean id="similarityCounter" class="com.intellitech.spider.similar.SimilarityCounter">   
 	</bean>  
+    <bean id="similarity" class="com.intellitech.spider.similar.LevenshteinSimilarity">   
+	</bean> 
+	<!--
+	<bean id="similarity" class="com.intellitech.spider.similar.CosineSimilarity">   
+	</bean>  -->
+	<bean id="analyzer" class="com.intellitech.spider.analyzer.PaodingTextAnalyzer">   
+	</bean>
+	<bean id="paodinAanalyzer" class="net.paoding.analysis.analyzer.PaodingAnalyzer">   
+	</bean>
+	<bean id="filter" class="com.intellitech.spider.filter.FilterChain">
+		   <property name="filters">  
+            <list>  
+                <ref bean="shortTextFilter" />  
+            </list>  
+        </property>
+	</bean>
+	
+	<bean id="shortTextFilter" class="com.intellitech.spider.filter.ShortTextFilter">   
+	</bean>
 </beans>
