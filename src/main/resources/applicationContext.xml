@@ -7,16 +7,18 @@
 	<bean id="propertyConfigurer"
 		class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
 		<property name="location">
-			<value>file:/Users/llh/git/RealtimeSpider/src/main/resources/mysql.properties</value>
+			<value>file:/Users/llh/IdeaProjects/RealtimeSpider/src/main/resources/mysql.properties</value>
 		</property>
 		<property name="fileEncoding" value="utf-8" />
 	</bean>
 	
     <!-- more bean definitions go here -->
-	<!-- Timer schedule -->  
-  
+	<!-- Timer schedule -->
+	<bean class="org.springframework.beans.factory.annotation.AutowiredAnnotationBeanPostProcessor"/>
 	<!--要调度的对象-->  
-	<bean id="jobBean" class="com.intellitech.spider.Brood" />  
+	<bean id="jobBean" class="com.intellitech.spider.Brood" >
+	<!--<property name="rootPageMapper" ref="rootPageMapper" />-->
+	</bean>
 	<bean id="jobDetail" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">  
 	    <property name="targetObject" ref="jobBean" />  
 	    <property name="targetMethod" value="execute" />  
@@ -27,7 +29,7 @@
 	<bean id="trigger" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">  
 	        <property name="jobDetail" ref="jobDetail" />  
 	                <!--表达式，我的是每 30 执行一次-->  
-	               <property name="cronExpression" value="0/10 * * * * ?" />  
+	               <property name="cronExpression" value="0/10 * * * * ?" />
 	</bean>  
 	  
 	<!-- <bean id="spider" class="com.intellitech.spider.Spider"/>   -->
@@ -43,7 +45,8 @@
 	    </property>  
 	</bean>
 	<bean id="sqlSessionFactory" class="org.mybatis.spring.SqlSessionFactoryBean">  
-	    <property name="configLocation" value="file:/Users/llh/git/RealtimeSpider/src/main/resources/mappers.xml" />  
+	    <!--<property name="configLocation" value="file:/Users/llh/git/RealtimeSpider/src/main/resources/mappers.xml" />-->
+		<property name="configLocation" value="classpath:mappers.xml" />
 	    <property name="dataSource" ref="dataSource" />  
 	</bean>  
 	<bean id="dataSource" class="org.springframework.jdbc.datasource.DriverManagerDataSource">  
@@ -60,11 +63,10 @@
 	</bean> 
 	<bean id="similarityCounter" class="com.intellitech.spider.similar.SimilarityCounter">   
 	</bean>  
-    <bean id="similarity" class="com.intellitech.spider.similar.LevenshteinSimilarity">   
-	</bean> 
-	<!--
-	<bean id="similarity" class="com.intellitech.spider.similar.CosineSimilarity">   
-	</bean>  -->
+    <!--<bean id="similarity" class="com.intellitech.spider.similar.LevenshteinSimilarity">
+	</bean>-->
+	<bean id="similarity" class="com.intellitech.spider.similar.CosineSimilarity">
+	</bean>
 	<bean id="analyzer" class="com.intellitech.spider.analyzer.PaodingTextAnalyzer">   
 	</bean>
 	<bean id="paodinAanalyzer" class="net.paoding.analysis.analyzer.PaodingAnalyzer">   

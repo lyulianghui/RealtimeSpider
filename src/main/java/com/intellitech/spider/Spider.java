@@ -66,8 +66,11 @@ public class Spider extends Thread{
 	{
 		for(RootPage page:pages)
 		{
+			//System.out.println("-----------");
 			if(stop)
 				return;
+			else
+				System.out.println("--------");
 			try {
 				List<Link> links = parsePage(page);
 				
@@ -82,7 +85,10 @@ public class Spider extends Thread{
 					rootPageMapper.updateByPrimaryKey(page);
 				}
 				int newLink = storeLinks(links);
-				System.out.println(newLink);
+				if (newLink>0)
+					System.out.println(newLink);
+				else
+					System.out.println("====");
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();

@@ -2,6 +2,9 @@
 <!DOCTYPE configuration PUBLIC "-//mybatis.org//DTD Config 3.0//EN" "http://mybatis.org/dtd/mybatis-3-config.dtd">  
 <configuration>  
     <mappers>  
-        <mapper resource="com/intellitech/spider/dao/LinkMapper.xml" />  
-    </mappers>  
+        <mapper resource="LinkMapper.xml" />
+        <mapper resource="RootPageMapper.xml" />
+        <!--<mapper resource="FilterLinkMapper.xml" />
+        <mapper resource="PendingLinkMapper.xml" />-->
+    </mappers>
 </configuration> 
