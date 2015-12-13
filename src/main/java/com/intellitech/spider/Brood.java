@@ -5,6 +5,9 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.intellitech.spider.dao.PendingLinkMapper;
+import com.intellitech.spider.model.Link;
+import com.intellitech.spider.model.LinkExample;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.intellitech.spider.analyzer.TextAnalyzer;
@@ -41,6 +44,70 @@ public class Brood {
 	}
 
 	private List<RootPage>rootPages;
+
+	public Filter getFilter() {
+		return filter;
+	}
+
+	public void setFilter(Filter filter) {
+		this.filter = filter;
+	}
+
+	public TextAnalyzer getAnalyzer() {
+		return analyzer;
+	}
+
+	public void setAnalyzer(TextAnalyzer analyzer) {
+		this.analyzer = analyzer;
+	}
+
+	public SimilarityCounter getSimilarityCounter() {
+		return similarityCounter;
+	}
+
+	public void setSimilarityCounter(SimilarityCounter similarityCounter) {
+		this.similarityCounter = similarityCounter;
+	}
+
+	public List<RootPage> getRootPages() {
+		return rootPages;
+	}
+
+	public void setRootPages(List<RootPage> rootPages) {
+		this.rootPages = rootPages;
+	}
+
+	public LinkMapper getLinkMapper() {
+		return linkMapper;
+	}
+
+	public void setLinkMapper(LinkMapper linkMapper) {
+		this.linkMapper = linkMapper;
+	}
+
+	public PendingLinkMapper getPendingLinkMapper() {
+		return pendingLinkMapper;
+	}
+
+	public void setPendingLinkMapper(PendingLinkMapper pendingLinkMapper) {
+		this.pendingLinkMapper = pendingLinkMapper;
+	}
+
+	@Autowired
+
+	private PendingLinkMapper pendingLinkMapper;
+
+	private List<Link>existLinks;
+
+	public synchronized List<Link> getExistLinks()
+	{
+		if (existLinks == null)
+		{
+			existLinks = linkMapper.selectByExample(new LinkExample());
+		}
+		return existLinks;
+	}
+
 	List<Spider>spiders = new ArrayList<Spider>();
 	@Autowired
 	private LinkMapper linkMapper;

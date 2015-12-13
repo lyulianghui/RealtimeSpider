@@ -12,18 +12,12 @@ public class SimilarityCounter {
 	
 	@Autowired
 	private Similarity similarity;
-	@Autowired
-	private LinkMapper linkMapper;
-	private List<Link>existLinks;
-	
 
 
-	public float maxSimilarScore(String text) {
+
+	public float maxSimilarScore(List<Link>existLinks,String text) {
 		// TODO Auto-generated method stub
-		if(existLinks == null)
-		{
-			existLinks = linkMapper.selectByExample(new LinkExample());
-		}
+
 		float maxScore = 0;
 		for(Link link:existLinks)
 		{

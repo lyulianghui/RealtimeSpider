@@ -30,8 +30,25 @@
 	        <property name="jobDetail" ref="jobDetail" />  
 	                <!--表达式，我的是每 30 执行一次-->  
 	               <property name="cronExpression" value="0/10 * * * * ?" />
-	</bean>  
-	  
+	</bean>
+
+	<!--要调度的对象-->
+	<bean id="jobBean1" class="com.intellitech.spider.Master" >
+		<!--<property name="rootPageMapper" ref="rootPageMapper" />-->
+	</bean>
+	<bean id="jobDetail1" class="org.springframework.scheduling.quartz.MethodInvokingJobDetailFactoryBean">
+		<property name="targetObject" ref="jobBean1" />
+		<property name="targetMethod" value="execute" />
+		<!--将并发设置为false-->
+		<property name="concurrent" value="true" />
+	</bean>
+
+	<bean id="trigger1" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">
+		<property name="jobDetail" ref="jobDetail1" />
+		<!--表达式，我的是每 30 执行一次-->
+		<property name="cronExpression" value="0/1 * * * * ?" />
+	</bean>
+
 	<!-- <bean id="spider" class="com.intellitech.spider.Spider"/>   -->
  
  
@@ -56,7 +73,15 @@
 	<bean id="linkMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">  
 	    <property name="mapperInterface" value="com.intellitech.spider.dao.LinkMapper" />  
 	    <property name="sqlSessionFactory" ref="sqlSessionFactory" />  
-	</bean>  
+	</bean>
+	<bean id="pendingLinkMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+		<property name="mapperInterface" value="com.intellitech.spider.dao.PendingLinkMapper" />
+		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
+	</bean>
+	<bean id="filterLinkMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">
+		<property name="mapperInterface" value="com.intellitech.spider.dao.FilterLinkMapper" />
+		<property name="sqlSessionFactory" ref="sqlSessionFactory" />
+	</bean>
 	<bean id="rootPageMapper" class="org.mybatis.spring.mapper.MapperFactoryBean">  
 	    <property name="mapperInterface" value="com.intellitech.spider.dao.RootPageMapper" />  
 	    <property name="sqlSessionFactory" ref="sqlSessionFactory" />  
@@ -75,10 +100,11 @@
 		   <property name="filters">  
             <list>  
                 <ref bean="shortTextFilter" />  
-            </list>  
+                <ref bean="noiceFilter" />
+            </list>
         </property>
 	</bean>
 	
-	<bean id="shortTextFilter" class="com.intellitech.spider.filter.ShortTextFilter">   
-	</bean>
+	<bean id="shortTextFilter" class="com.intellitech.spider.filter.ShortTextFilter"/>
+	<bean id="noiceFilter" class="com.intellitech.spider.filter.NoiceFilter"/>
 </beans>
