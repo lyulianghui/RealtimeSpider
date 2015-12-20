@@ -4,7 +4,7 @@
     <mappers>  
         <mapper resource="LinkMapper.xml" />
         <mapper resource="RootPageMapper.xml" />
-        <!--<mapper resource="FilterLinkMapper.xml" />
-        <mapper resource="PendingLinkMapper.xml" />-->
+        <mapper resource="FilterLinkMapper.xml" />
+        <mapper resource="PendingLinkMapper.xml" />
     </mappers>
 </configuration> 

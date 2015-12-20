@@ -3,12 +3,15 @@ package com.intellitech.spider.common;
 import com.intellitech.spider.model.Link;
 import com.intellitech.spider.model.PendingLink;
 
+import java.util.ArrayList;
+import java.util.List;
+
 /**
  * Created by llh on 15/12/13.
  */
 public class LinkUtils {
 
-    private Link translateToLink(PendingLink pendingLink)
+    public static Link translateToLink(PendingLink pendingLink)
     {
         Link link = new Link();
         link.setGmtCreate(pendingLink.getGmtCreate());
@@ -20,7 +23,17 @@ public class LinkUtils {
         return link;
     }
 
-    private Link translateToPendingLink(PendingLink pendingLink)
+    public static List<Link> translateToLinks(List<PendingLink> pendingLinks,PendingLink current)
+    {
+        List<Link> links = new ArrayList<>(pendingLinks.size());
+        for (PendingLink pendingLink:pendingLinks) {
+            if (pendingLink!=current)
+                links.add(translateToLink(pendingLink));
+        }
+        return links;
+    }
+
+    public static Link translateToPendingLink(PendingLink pendingLink)
     {
         Link link = new Link();
         link.setGmtCreate(pendingLink.getGmtCreate());

@@ -9,7 +9,9 @@ import java.nio.charset.Charset;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import java.util.concurrent.CountDownLatch;
 
+import com.intellitech.spider.common.LinkUtils;
 import com.intellitech.spider.dao.PendingLinkMapper;
 import com.intellitech.spider.model.PendingLink;
 import org.apache.http.HttpEntity;
@@ -38,8 +40,17 @@ import com.intellitech.spider.similar.SimilarityCounter;
 
 public class Spider extends Thread{
 
-	
-	
+
+	CountDownLatch countDownLatch;
+
+	public CountDownLatch getCountDownLatch() {
+		return countDownLatch;
+	}
+
+	public void setCountDownLatch(CountDownLatch countDownLatch) {
+		this.countDownLatch = countDownLatch;
+	}
+
 	private Filter filter;
 	
 	private TextAnalyzer analyzer; 
@@ -57,50 +68,45 @@ public class Spider extends Thread{
 	volatile boolean stop =false;
 
 	Brood brood;
-
-	public Spider(Brood brood) {
+	List<Link> hashCrawlList = new ArrayList<>();
+	public Spider(Brood brood,List<RootPage> pages) {
 		super();
 		this.filter = brood.getFilter();
 		this.analyzer = brood.getAnalyzer();
 		this.similarityCounter = brood.getSimilarityCounter();
 		this.pendingLinkMapper = brood.getPendingLinkMapper();
 		this.linkMapper = brood.getLinkMapper();
-		this.pages = brood.getRootPages();
 		this.rootPageMapper = brood.getRootPageMapper();
 		this.brood = brood;
+		this.pages = pages;
 	}
+
+
 
 	public void run()
 	{
-		for(RootPage page:pages)
-		{
-			//System.out.println("-----------");
-			if(stop)
-				return;
-			else
-				System.out.println("--------");
-			try {
-				List<Link> links = parsePage(page);
-				
-				//旧首页，爬出来的链接需要过滤，只保存新增的link。
-				if(page.getIsNew() == Constants.OLD_PAGE)
-				{
-					links = filterSimilarLinks(brood.getExistLinks(),links);
+		try {
+			while (!stop) {
+				for (RootPage page : pages) {
+					//System.out.println("-----------");
+					if (stop)
+						return;
+
+					try {
+						crawlRootPage(page);
+						if (page.getIsNew() == Constants.NEW_PAGE) {
+							page.setIsNew(Constants.OLD_PAGE);
+							rootPageMapper.updateByPrimaryKey(page);
+						}
+
+					} catch (IOException e) {
+						// TODO Auto-generated catch block
+						e.printStackTrace();
+					}
 				}
-				else
-				{
-					page.setIsNew(Constants.OLD_PAGE);
-					rootPageMapper.updateByPrimaryKey(page);
-				}
-				int newLink = storeLinks(links);
-				if (newLink>0)
-					System.out.println(newLink);
-				else
-					System.out.println("====");
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
 			}
+		}finally {
+			countDownLatch.countDown();
 		}
 	}
 	
@@ -142,50 +148,55 @@ public class Spider extends Thread{
 		}
 	}
 	
-	public List<PendingLink>parsePage(RootPage page) throws IOException
+	public void crawlRootPage(RootPage page) throws IOException
 	{
+
 		Document doc = Jsoup.connect(page.getUrl()).get();
         Elements links = doc.select("a[href]");
-        List<PendingLink> linkList = new ArrayList();
+        //List<PendingLink> linkList = new ArrayList();
         for (Element link : links) {
             //print(" * a: <%s>  (%s)", link.attr("abs:href"), trim(link.text(), 35));
             //System.out.println(link);
-        	int status = Constants.NEW_PAGE;
-        	//新首页
-        	if(page.getIsNew()==Constants.NEW_PAGE)
-        	{
-        		//新增的首页，爬出来的网页不需要发送，都当成旧网页存起来
-        		status = Constants.OLD_PAGE;
-        	}
-        	if(!filter.filter(link))
-        		linkList.add(new PendingLink(null,link.attr("abs:href"),link.text(),page.getUrl(),analyzer.analyze(link.text()),status,new Date()));
-        	
+			if(!filter.filter(link)) {
+				//新首页
+				if (page.getIsNew() == Constants.NEW_PAGE) {
+					//新增的首页，爬出来的网页不需要发送，都当成旧网页存起来
+					linkMapper.insert(new Link(null, link.attr("abs:href"), link.text(), page.getUrl(), analyzer.analyze(link.text()),Constants.OLD_PAGE, new Date()));
+				}
+				else
+				{
+					if (!filterSimilarLink(brood.getExistLinks(),hashCrawlList,link)) {
+						PendingLink pendingLink = new PendingLink(null, link.attr("abs:href"), link.text(), page.getUrl(), analyzer.analyze(link.text()), Constants.NEW_PAGE, new Date());
+						pendingLinkMapper.insert(pendingLink);
+						System.out.println(Thread.currentThread().getName()+" new pending url:"+link.attr("abs:href")+","+link.text());
+						hashCrawlList.add(LinkUtils.translateToLink(pendingLink));
+
+					}
+				}
+			}
         }
         
-        return linkList;
     }
 
-	public List<Link> filterSimilarLinks(List<Link>existLinks,List<Link>links)
+
+
+	public boolean filterSimilarLink(List<Link>existLinks,List<Link>hashCrawlLinks,Element link)
 	{
-		List<Link>filterLinks = new ArrayList<Link>();
-		for(Link link:links)
-		{
-			float score= similarityCounter.maxSimilarScore(existLinks,link.getTerms());
-			if(score<Constants.THRESHOLD_SCORE)
+			float score= similarityCounter.maxSimilarScore(hashCrawlLinks,link.text());
+			if (score > Constants.THRESHOLD_SCORE)
 			{
-				filterLinks.add(link);
+				return true;
 			}
-		}
-		return filterLinks;
+
+		    score= similarityCounter.maxSimilarScore(existLinks,link.text());
+			if (score > Constants.THRESHOLD_SCORE)
+			{
+				return true;
+			}
+			return false;
+
 	}
-	
-	public int storeLinks(List<Link>links)
-	{
-		int count=0;
-		for(Link link:links)
-		{
-			count = count+pendingLinkMapper.insert(link);
-		}
-		return count;
-	}
+
+
+
 }

@@ -2,6 +2,8 @@ package com.intellitech.spider.similar;
 
 import java.util.List;
 
+import com.intellitech.spider.analyzer.TextAnalyzer;
+import com.intellitech.spider.model.PendingLink;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import com.intellitech.spider.dao.LinkMapper;
@@ -13,7 +15,8 @@ public class SimilarityCounter {
 	@Autowired
 	private Similarity similarity;
 
-
+	@Autowired
+	private TextAnalyzer analyzer;
 
 	public float maxSimilarScore(List<Link>existLinks,String text) {
 		// TODO Auto-generated method stub
@@ -21,7 +24,12 @@ public class SimilarityCounter {
 		float maxScore = 0;
 		for(Link link:existLinks)
 		{
-			float currentScore = similarity.similar(link.getTerms(),text);
+			if (link.getText().equals(text))
+			{
+				return 1.0f;
+			}
+			String terms = analyzer.analyze(text);
+			float currentScore = similarity.similar(link.getTerms(),terms);
 			if(maxScore<currentScore)
 			{
 				maxScore = currentScore;
@@ -29,5 +37,6 @@ public class SimilarityCounter {
 		}
 		return maxScore;
 	}
+
 
 }
