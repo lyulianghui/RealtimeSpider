@@ -18,13 +18,13 @@ public class SimilarityCounter {
 	@Autowired
 	private TextAnalyzer analyzer;
 
-	public float maxSimilarScore(List<Link>existLinks,String text) {
+	public float maxSimilarScore(List<Link>existLinks,String url,String text) {
 		// TODO Auto-generated method stub
 
 		float maxScore = 0;
 		for(Link link:existLinks)
 		{
-			if (link.getText().equals(text))
+			if (url.equals(link.getUrl())||link.getText().equals(text))
 			{
 				return 1.0f;
 			}

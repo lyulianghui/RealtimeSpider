@@ -40,7 +40,7 @@
 		<property name="targetObject" ref="jobBean1" />
 		<property name="targetMethod" value="execute" />
 		<!--将并发设置为false-->
-		<property name="concurrent" value="false" />
+		<property name="concurrent" value="true" />
 	</bean>
 
 	<bean id="trigger1" class="org.springframework.scheduling.quartz.CronTriggerFactoryBean">

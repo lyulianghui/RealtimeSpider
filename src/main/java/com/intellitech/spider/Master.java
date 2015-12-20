@@ -30,49 +30,74 @@ public class Master {
     @Autowired
     private SimilarityCounter similarityCounter;
 
-    Date lastCheckDate = new Date(0);
+    volatile Date lastCheckDate = new Date(0);
+
 
     public void execute()
     {
         try {
 
 
-            //System.out.println("master start....");
-            Date currentDate = new Date();
+            //System.out.println("master start...."+lastCheckDate);
             PendingLinkExample example = new PendingLinkExample();
-            example.createCriteria().andGmtCreateBetween(lastCheckDate,currentDate);
-            List<PendingLink> pendingLinkList = pendingLinkMapper.selectByExample(example);
-            if (!pendingLinkList.isEmpty())
+            List<PendingLink> pendingLinkList;
+            synchronized (this) {
+                Date currentDate = new Date();
+                example.createCriteria().andGmtCreateLessThan(currentDate);
+                pendingLinkList = pendingLinkMapper.selectByExample(example);
+                pendingLinkMapper.deleteByExample(example);
+            }
+            if (pendingLinkList !=null && !pendingLinkList.isEmpty())
             {
                 List<Link> existLinks = linkMapper.selectByExample(new LinkExample());
                 for (PendingLink pendingLink:pendingLinkList) {
                     if (pendingLink.getIsnew() == Constants.NEW_PAGE) {
                         if (!filterSimilarLink(existLinks, pendingLink)) {
                             Link link = LinkUtils.translateToLink(pendingLink);
-                            linkMapper.insert(link);
+                            try {
+                                linkMapper.insert(link);
+                                System.out.println("new link:" + link.getUrl() + " " + link.getText());
+                            }
+                            catch (Exception e)
+                            {
+                                //System.out.println("insert link error:" + e);
+                            }
                             existLinks.add(link);
-                            System.out.println("new link:" + link.getUrl() + " " + link.getText());
                         }
                         else
                         {
                             Link link = LinkUtils.translateToLink(pendingLink);
                             link.setStatus(Constants.OLD_PAGE);
-                            linkMapper.insert(link);
+                            LinkExample linkExample = new LinkExample();
+                            linkExample.createCriteria().andUrlEqualTo(link.getUrl());
+                            try {
+                                linkMapper.insert(link);
+                                System.out.println("filter link:" + pendingLink.getUrl() + " " + pendingLink.getText());
+                            }
+                            catch (Exception e)
+                            {
+                                //System.out.println("insert link error:" + e);
+                            }
                             existLinks.add(link);
-                            System.out.println("filter link:" + pendingLink.getUrl() + " " + pendingLink.getText());
 
                         }
                     }
                     else
                     {
                         Link link = LinkUtils.translateToLink(pendingLink);
-                        linkMapper.insert(link);
+                        try {
+                            linkMapper.insert(link);
+                        }
+                        catch (Exception e)
+                        {
+                            //System.out.println("insert link error:" + e);
+                        }
                     }
-                    pendingLinkMapper.deleteByPrimaryKey(pendingLink.getId());
+
                 }
 
             }
-            lastCheckDate = currentDate;
+            //lastCheckDate = currentDate;
         }
         catch (Exception e)
         {
@@ -89,7 +114,7 @@ public class Master {
      */
     public boolean filterSimilarLink(List<Link>existLinks,PendingLink pendingLink) {
 
-        float score = similarityCounter.maxSimilarScore(existLinks, pendingLink.getTerms());
+        float score = similarityCounter.maxSimilarScore(existLinks,pendingLink.getUrl(), pendingLink.getTerms());
         return score > Constants.THRESHOLD_SCORE;
     }
 

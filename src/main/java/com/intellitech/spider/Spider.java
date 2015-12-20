@@ -41,7 +41,7 @@ import com.intellitech.spider.similar.SimilarityCounter;
 public class Spider extends Thread{
 
 
-	CountDownLatch countDownLatch;
+	volatile CountDownLatch countDownLatch;
 
 	public CountDownLatch getCountDownLatch() {
 		return countDownLatch;
@@ -63,7 +63,7 @@ public class Spider extends Thread{
 
 	private LinkMapper linkMapper;
 
-	List<RootPage> pages;
+	volatile List<RootPage> pages;
 	
 	volatile boolean stop =false;
 
@@ -161,16 +161,27 @@ public class Spider extends Thread{
 				//新首页
 				if (page.getIsNew() == Constants.NEW_PAGE) {
 					//新增的首页，爬出来的网页不需要发送，都当成旧网页存起来
-					linkMapper.insert(new Link(null, link.attr("abs:href"), link.text(), page.getUrl(), analyzer.analyze(link.text()),Constants.OLD_PAGE, new Date()));
+					try {
+						linkMapper.insert(new Link(null, link.attr("abs:href"), link.text(), page.getUrl(), analyzer.analyze(link.text()), Constants.OLD_PAGE, new Date()));
+					}
+					catch (Exception e)
+					{
+						//System.out.println("insert link error:" + e);
+					}
 				}
 				else
 				{
 					if (!filterSimilarLink(brood.getExistLinks(),hashCrawlList,link)) {
 						PendingLink pendingLink = new PendingLink(null, link.attr("abs:href"), link.text(), page.getUrl(), analyzer.analyze(link.text()), Constants.NEW_PAGE, new Date());
-						pendingLinkMapper.insert(pendingLink);
-						System.out.println(Thread.currentThread().getName()+" new pending url:"+link.attr("abs:href")+","+link.text());
+						try {
+							pendingLinkMapper.insert(pendingLink);
+							System.out.println(Thread.currentThread().getName() + " new pending url:" + link.attr("abs:href") + "," + link.text());
+						}
+						catch (Exception e)
+						{
+							//System.out.println("insert pendinglink error:" + e);
+						}
 						hashCrawlList.add(LinkUtils.translateToLink(pendingLink));
-
 					}
 				}
 			}
@@ -182,13 +193,13 @@ public class Spider extends Thread{
 
 	public boolean filterSimilarLink(List<Link>existLinks,List<Link>hashCrawlLinks,Element link)
 	{
-			float score= similarityCounter.maxSimilarScore(hashCrawlLinks,link.text());
+			float score= similarityCounter.maxSimilarScore(hashCrawlLinks, link.attr("abs:href"),link.text());
 			if (score > Constants.THRESHOLD_SCORE)
 			{
 				return true;
 			}
 
-		    score= similarityCounter.maxSimilarScore(existLinks,link.text());
+		    score= similarityCounter.maxSimilarScore(existLinks,link.attr("abs:href"),link.text());
 			if (score > Constants.THRESHOLD_SCORE)
 			{
 				return true;

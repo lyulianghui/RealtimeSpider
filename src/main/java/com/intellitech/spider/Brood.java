@@ -125,7 +125,7 @@ public class Brood {
 			/*
 			最多2个调度
 			 */
-			if (runningBroods.getAndIncrement()>=2)
+			if (runningBroods.getAndIncrement()>=1)
 			{
 				return;
 			}
